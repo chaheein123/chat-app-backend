@@ -13,6 +13,7 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "consolidate": "^0.15.1",
+    "cors": "^2.8.5",
     "dustjs-helpers": "^1.7.4",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",

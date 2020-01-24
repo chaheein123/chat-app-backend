@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 // Postgresql DB
 const pg = require("pg");
 const { Client } = require("pg");
@@ -13,24 +12,44 @@ const client = new Client({
 client.connect();
 
 // Routes
+// sign up
 router.post("/signup", (req, res) => {
-
-  console.log(req.body.email, "hello");
   client.query(`SELECT * FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
     if (err) {
-      console.log(err);
-      console.log(req.body.email);
-      res.send("error")
+      res.send(err);
     }
 
     else {
-      res.status(200).send(result.rows);
+      if (result.rows.length != 0) {
+        res.json({ errorEmail: `${req.body.email} is already in use` })
+      }
+
+      else {
+        let token = jwt.sign(req.body.email, "shhh");
+        client.query(`INSERT INTO users(useremail, userpw, usertoken) VALUES('${req.body.email}', '${req.body.pw}', '${token}');`, (err, result) => {
+          if (err) {
+            res.send(err)
+          }
+          else {
+            res.json({ token });
+          }
+        })
+      }
     }
   });
 
 });
 
+// Checking for the localStorage
+router.post("/authenticate", (req, res) => {
+  client.query(`SELECT * FROM users WHERE usertoken='${req.body.userToken}'`, (err, result) => {
+    if (err) {
 
-
+    }
+    else {
+      res.json(result.rows)[0];
+    }
+  })
+})
 
 module.exports = router;

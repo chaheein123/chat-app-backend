@@ -1,11 +1,13 @@
 const express = require("express");
 const app = express();
 const pg = require("pg");
+const cors = require("cors");
 
 // body parser middleware
 const bodyParser = require('body-parser');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cors());
 
 // Connecting the Postgresql
 const { Client } = require("pg");
@@ -20,20 +22,9 @@ client.connect();
 app.use("/auth", require("./routes/auth"));
 
 
-app.post("/", (req, res) => {
-  client.query('SELECT * FROM users', (err, result) => {
-    if (err) {
-      console.log(err)
-    }
-    res.status(200).send(result.rows);
-  });
-  console.log(req.body);
-  // res.send("yoyo wussup?");
-});
+// app.post("/", (req, res) => {
 
-
-
-
+// });
 
 const port = process.env.PORT || 5000;
 
