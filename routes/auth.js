@@ -50,6 +50,50 @@ router.post("/authenticate", (req, res) => {
       res.json(result.rows)[0];
     }
   })
+});
+
+// Login
+router.post("/login", (req, res) => {
+
+  client.query(`SELECT * FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
+    if (err) {
+      res.json({
+        errorEmail: "Something went wrong checking the email"
+      })
+    }
+    else {
+      // if email does not exist, send error msg 
+      if (!result.rows.length) {
+        res.json({
+          errorEmail: `${req.body.email} doesn't exist`
+        })
+      }
+      // if email does exist, then check for the password in the DB
+      else {
+        client.query(`SELECT * FROM users WHERE userpw='${req.body.pw}' AND useremail='${req.body.email}'`, (err, result) => {
+          if (err) {
+            res.json({
+              errorPW: "Something went wrong while checking the password"
+            })
+          }
+          else {
+            if (result.rows.length == 1) {
+              let token = jwt.sign(req.body.email, "shhh");
+              client.query(`UPDATE users SET usertoken='${token}' WHERE id=${result['rows'][0]['id']}`);
+              res.json({ token });
+            }
+
+            else {
+              res.json({
+                errorPw: "Incorrect password"
+              })
+            }
+          }
+        })
+      }
+
+    }
+  })
 })
 
 module.exports = router;
