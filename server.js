@@ -20,6 +20,7 @@ client.connect();
 
 // **************** Routes ****************
 app.use("/auth", require("./routes/auth"));
+app.use("/friends", require("./routes/friends"));
 
 
 // app.post("/", (req, res) => {
