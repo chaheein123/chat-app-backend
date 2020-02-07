@@ -11,7 +11,6 @@ const client = new Client({
 });
 client.connect();
 
-// Routes
 // sign up
 router.post("/signup", (req, res) => {
   client.query(`SELECT * FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
@@ -25,31 +24,31 @@ router.post("/signup", (req, res) => {
       }
 
       else {
-        let token = jwt.sign(req.body.email, "shhh");
-        client.query(`INSERT INTO users(useremail, userpw, usertoken) VALUES('${req.body.email}', '${req.body.pw}', '${token}');`, (err, result) => {
+        client.query(`INSERT INTO users(useremail, userpw) VALUES('${req.body.email}', '${req.body.pw}'); SELECT id, useremail FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
           if (err) {
             res.send(err)
           }
           else {
-            res.json({ token });
+            let token = jwt.sign({ email: result[1]["rows"][0]["useremail"], id: result[1]["rows"][0]["id"] }, "shhh");
+            res.json({ token, id: result[1]["rows"][0]["id"] });
           }
         })
       }
     }
   });
-
 });
 
 // Checking for the localStorage
 router.post("/authenticate", (req, res) => {
-  client.query(`SELECT * FROM users WHERE usertoken='${req.body.userToken}'`, (err, result) => {
-    if (err) {
-
+  jwt.verify(req.body.userToken, 'shhh', function (err, decoded) {
+    if (err || req.body.userid != decoded.id) {
+      throw "Invalid token";
+      res.end();
     }
     else {
-      res.json(result.rows)[0];
+      res.end();
     }
-  })
+  });
 });
 
 // Login
@@ -78,9 +77,8 @@ router.post("/login", (req, res) => {
           }
           else {
             if (result.rows.length == 1) {
-              let token = jwt.sign(req.body.email, "shhh");
-              client.query(`UPDATE users SET usertoken='${token}' WHERE id=${result['rows'][0]['id']}`);
-              res.json({ token });
+              let token = jwt.sign({ email: result["rows"][0]["useremail"], id: result["rows"][0]["id"] }, "shhh");
+              res.json({ token, id: result["rows"][0]["id"] });
             }
 
             else {

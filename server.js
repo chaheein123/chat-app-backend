@@ -21,11 +21,7 @@ client.connect();
 // **************** Routes ****************
 app.use("/auth", require("./routes/auth"));
 app.use("/friends", require("./routes/friends"));
-
-
-// app.post("/", (req, res) => {
-
-// });
+app.use("/chats", require("./routes/chats"));
 
 const port = process.env.PORT || 5000;
 
