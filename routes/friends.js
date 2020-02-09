@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
 // Postgresql DB
 const pg = require("pg");
 const { Client } = require("pg");
