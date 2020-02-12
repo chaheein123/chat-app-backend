@@ -1,5 +1,9 @@
 const express = require("express");
 const router = express.Router();
+// const socketio = require("socket.io");
+// const http = require("http");
+// const server = http.createServer(router);
+// const io = socketio(server);
 
 // Postgresql DB
 const pg = require("pg");
@@ -61,6 +65,23 @@ router.get("/:id/chatroom/:chatroomid", (req, res) => {
     }
   });
 
-})
+});
+
+router.post("/sentmsg", (req, res) => {
+  let ownId = Number(req.body.ownId);
+  let chatroomId = Number(req.body.chatroomId);
+  let msg = req.body.msg;
+
+  client.query(`INSERT INTO messages(sentby, chatroomid, msgcontent) VALUES (${ownId}, ${chatroomId}, '${msg}')`, (err, result) => {
+    if (err) {
+      console.log(err);
+      res.end();
+    }
+
+    else {
+      res.end();
+    }
+  })
+});
 
 module.exports = router;

@@ -154,6 +154,54 @@ router.post("/acceptrequest", (req, res) => {
       })
     }
   })
+});
+
+// Handles request to find recommended users to add as friends upon FriendLeft component mounting
+router.get("/:id/allOtherUsers", (req, res) => {
+  let ownId = req.params.id;
+  let recommendedUsers;
+  let pendingUsers;
+  let userFriends = new Set();
+
+  client.query(`SELECT DISTINCT users.useremail, username, users.id FROM user_friends INNER JOIN users ON user_friends.friend_id = users.id WHERE NOT (user_friends.user_id = ${ownId} OR user_friends.friend_id = ${ownId} OR users.id = ${ownId}) LIMIT 45`, (error, result) => {
+    if (error) {
+      console.log(error);
+      res.end()
+    }
+    else {
+      recommendedUsers = result.rows;
+      client.query(`SELECT * FROM user_friends INNER JOIN users ON user_friends.friend_id = users.id WHERE user_id = ${ownId} and status = 'Request received'`, (err, result) => {
+        if (err) {
+          console.log(error);
+          res.end()
+        }
+        else {
+          pendingUsers = result.rows;
+          console.log(pendingUsers);
+          client.query(`SELECT friend_id FROM user_friends WHERE user_id = ${ownId} AND status = 'Friends'`, (err, result) => {
+            if (err) {
+              console.log(err);
+              res.end()
+            }
+            else {
+              for (let friend in result.rows) {
+                userFriends.add(result.rows[friend]["friend_id"])
+              };
+              recommendedUsers = recommendedUsers.filter(user => !userFriends.has(user.id));
+              recommendedUsers.sort(() => Math.random() - 0.5);
+              res.json({ recommendedUsers, pendingUsers });
+            }
+          })
+        }
+      });
+    }
+  });
+
+
+
+
+
+
 })
 
 module.exports = router;
