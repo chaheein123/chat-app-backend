@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const {
+  io
+} = require("../index");
 // const socketio = require("socket.io");
 // const http = require("http");
 // const server = http.createServer(router);
@@ -7,12 +10,21 @@ const router = express.Router();
 
 // Postgresql DB
 const pg = require("pg");
-const { Client } = require("pg");
+const {
+  Client
+} = require("pg");
 const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
 const client = new Client({
   connectionString: connectionString
 });
 client.connect();
+
+const userIdToSocketIdMap = {};
+
+io.on("connection", (socket) => {
+  console.log("SOCKET ID : ", socket.id)
+  userIdToSocketIdMap[148] = socket.id;
+});
 
 // Chats
 router.get("/allchats/:id", (req, res) => {
@@ -29,10 +41,9 @@ router.get("/allchats/:id", (req, res) => {
     ORDER BY user_chatroom.chatroomid, messages.id DESC
     `, (err, result) => {
       if (err) {
-        console.log(err);
+
         res.end()
-      }
-      else {
+      } else {
         res.send(result.rows);
       }
     }
@@ -47,19 +58,20 @@ router.get("/:id/chatroom/:chatroomid", (req, res) => {
 
   client.query(`SELECT users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE chatroomid = ${chatroomid} AND friendid != ${ownid}`, (err, result) => {
     if (err) {
-      console.log(err);
+
       res.end()
-    }
-    else {
+    } else {
       chatters = result.rows;
       client.query(`SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=${chatroomid} ORDER BY messages.createdat`, (err, result) => {
         if (err) {
-          console.log(err);
+
           res.end()
-        }
-        else {
+        } else {
           messages = result.rows;
-          res.json({ chatters, messages });
+          res.json({
+            chatters,
+            messages
+          });
         }
       })
     }
@@ -72,15 +84,22 @@ router.post("/sentmsg", (req, res) => {
   let chatroomId = Number(req.body.chatroomId);
   let msg = req.body.msg;
 
-  client.query(`INSERT INTO messages(sentby, chatroomid, msgcontent) VALUES (${ownId}, ${chatroomId}, '${msg}')`, (err, result) => {
-    if (err) {
-      console.log(err);
-      res.end();
-    }
+  client.query(`INSERT INTO messages(sentby, chatroomid, msgcontent) VALUES (${ownId}, ${chatroomId}, '${msg}') RETURNING *`, (err, messageResult) => {
+    if (err) console.log(err);
+    client.query(`SELECT userid FROM user_chatroom WHERE chatroomid = ${chatroomId}`, (err, result) => {
+      if (err) console.log(err);
 
-    else {
+      const userIds = result.rows.map(({
+        userid
+      }) => userid);
+
+      userIds.map((userId) => {
+        console.log(userIdToSocketIdMap[userId])
+        io.to(userIdToSocketIdMap[userId]).emit("newMessage", messageResult.rows);
+      });
+
       res.end();
-    }
+    });
   })
 });
 

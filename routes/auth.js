@@ -4,33 +4,40 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 // Postgresql DB
 const pg = require("pg");
-const { Client } = require("pg");
+const {
+  Client
+} = require("pg");
 const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
 const client = new Client({
   connectionString: connectionString
 });
 client.connect();
-
+const {
+  io
+} = require("../index");
 // sign up
 router.post("/signup", (req, res) => {
   client.query(`SELECT * FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
     if (err) {
       res.send(err);
-    }
-
-    else {
+    } else {
       if (result.rows.length != 0) {
-        res.json({ errorEmail: `${req.body.email} is already in use` })
-      }
-
-      else {
+        res.json({
+          errorEmail: `${req.body.email} is already in use`
+        })
+      } else {
         client.query(`INSERT INTO users(useremail, userpw) VALUES('${req.body.email}', '${req.body.pw}'); SELECT id, useremail FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
           if (err) {
             res.send(err)
-          }
-          else {
-            let token = jwt.sign({ email: result[1]["rows"][0]["useremail"], id: result[1]["rows"][0]["id"] }, "shhh");
-            res.json({ token, id: result[1]["rows"][0]["id"] });
+          } else {
+            let token = jwt.sign({
+              email: result[1]["rows"][0]["useremail"],
+              id: result[1]["rows"][0]["id"]
+            }, "shhh");
+            res.json({
+              token,
+              id: result[1]["rows"][0]["id"]
+            });
           }
         })
       }
@@ -44,8 +51,7 @@ router.post("/authenticate", (req, res) => {
     if (err || req.body.userid != decoded.id) {
       throw "Invalid token";
       res.end();
-    }
-    else {
+    } else {
       res.end();
     }
   });
@@ -53,14 +59,12 @@ router.post("/authenticate", (req, res) => {
 
 // Login
 router.post("/login", (req, res) => {
-
   client.query(`SELECT * FROM users WHERE useremail='${req.body.email}'`, (err, result) => {
     if (err) {
       res.json({
         errorEmail: "Something went wrong checking the email"
       })
-    }
-    else {
+    } else {
       // if email does not exist, send error msg 
       if (!result.rows.length) {
         res.json({
@@ -74,14 +78,18 @@ router.post("/login", (req, res) => {
             res.json({
               errorPW: "Something went wrong while checking the password"
             })
-          }
-          else {
+          } else {
             if (result.rows.length == 1) {
-              let token = jwt.sign({ email: result["rows"][0]["useremail"], id: result["rows"][0]["id"] }, "shhh");
-              res.json({ token, id: result["rows"][0]["id"] });
-            }
+              let token = jwt.sign({
+                email: result["rows"][0]["useremail"],
+                id: result["rows"][0]["id"]
+              }, "shhh");
 
-            else {
+              res.json({
+                token,
+                id: result["rows"][0]["id"]
+              });
+            } else {
               res.json({
                 errorPw: "Incorrect password"
               })

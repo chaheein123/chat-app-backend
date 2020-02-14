@@ -1,16 +1,15 @@
-const express = require("express");
-const app = express();
-const pg = require("pg");
-const cors = require("cors");
+const {
+  app,
+  io,
+  server
+} = require("./index");
 
-// body parser middleware
-const bodyParser = require('body-parser');
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(cors());
+const pg = require("pg");
 
 // Connecting the Postgresql
-const { Client } = require("pg");
+const {
+  Client
+} = require("pg");
 const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
 
 const client = new Client({
@@ -25,6 +24,6 @@ app.use("/chats", require("./routes/chats"));
 
 const port = process.env.PORT || 5000;
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server started on port ${port}`)
 });
