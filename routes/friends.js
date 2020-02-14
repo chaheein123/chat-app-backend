@@ -162,8 +162,9 @@ router.get("/:id/allOtherUsers", (req, res) => {
   let recommendedUsers;
   let pendingUsers;
   let userFriends = new Set();
+  let pendingUsersSet = new Set();
 
-  client.query(`SELECT DISTINCT users.useremail, username, users.id FROM user_friends INNER JOIN users ON user_friends.friend_id = users.id WHERE NOT (user_friends.user_id = ${ownId} OR user_friends.friend_id = ${ownId} OR users.id = ${ownId}) LIMIT 45`, (error, result) => {
+  client.query(`SELECT DISTINCT useremail, username, id FROM users WHERE NOT id = ${ownId}`, (error, result) => {
     if (error) {
       console.log(error);
       res.end()
@@ -177,8 +178,7 @@ router.get("/:id/allOtherUsers", (req, res) => {
         }
         else {
           pendingUsers = result.rows;
-          console.log(pendingUsers);
-          client.query(`SELECT friend_id FROM user_friends WHERE user_id = ${ownId} AND status = 'Friends'`, (err, result) => {
+          client.query(`SELECT friend_id FROM user_friends WHERE user_id = ${ownId}`, (err, result) => {
             if (err) {
               console.log(err);
               res.end()
@@ -196,12 +196,20 @@ router.get("/:id/allOtherUsers", (req, res) => {
       });
     }
   });
+});
 
+router.get("/:id/allfriends", (req, res) => {
 
-
-
-
-
+  let ownId = Number(req.params.id);
+  client.query(`SELECT * FROM user_friends INNER JOIN users ON user_friends.friend_id = users.id WHERE user_friends.user_id =${ownId} AND user_friends.status = 'Friends'`, (err, result) => {
+    if (err) {
+      console.log(err);
+      res.end();
+    }
+    else {
+      res.json({ friends: result.rows })
+    }
+  })
 })
 
 module.exports = router;
