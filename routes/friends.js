@@ -1,16 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-
-// Postgresql DB
-const pg = require("pg");
-const { Client } = require("pg");
-const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
-const client = new Client({
-  connectionString: connectionString
-});
-client.connect();
+const {
+  io,
+  router,
+  client
+} = require("../index");
 
 // Find users from friends feature
 router.post("/findusers", (req, res) => {
@@ -26,32 +18,32 @@ router.post("/findusers", (req, res) => {
     if (err) {
       console.log(err);
       res.send(err);
-    }
-    else {
+    } else {
       allusers = result["rows"];
       client.query(`SELECT DISTINCT useremail FROM user_friends INNER JOIN users ON users.id = user_friends.friend_id WHERE user_id=${userid} AND status='Request sent'`, (err, result) => {
         if (err) {
           console.log(err);
           res.send(err);
-        }
-        else {
+        } else {
           requestSentUsers = result["rows"];
           client.query(`SELECT DISTINCT useremail FROM user_friends INNER JOIN users ON users.id = user_friends.friend_id WHERE user_id=${userid} AND status='Request received'`, (err, result) => {
             if (err) {
               console.log(err);
               res.send(err)
-            }
-
-            else {
+            } else {
               requestReceivedUsers = result["rows"];
               client.query(`SELECT DISTINCT useremail FROM user_friends INNER JOIN users ON users.id = user_friends.friend_id WHERE user_id=${userid} AND status='Friends'`, (err, result) => {
                 if (err) {
                   console.log(err);
                   res.send(err)
-                }
-                else {
+                } else {
                   friends = result["rows"];
-                  res.json({ allusers, requestSentUsers, requestReceivedUsers, friends })
+                  res.json({
+                    allusers,
+                    requestSentUsers,
+                    requestReceivedUsers,
+                    friends
+                  })
                 }
               })
             }
@@ -73,16 +65,13 @@ router.post("/addfriends", (req, res) => {
     if (err) {
       console.log(err);
       res.send(err);
-    }
-
-    else {
+    } else {
       friendid = result["rows"][0]["id"];
       client.query(`INSERT INTO user_friends(user_id, friend_id, status) VALUES(${userid}, ${friendid},'Request sent'); INSERT INTO user_friends(user_id, friend_id, status) VALUES(${friendid}, ${userid},'Request received')`, (err, result) => {
         if (err) {
           console.log(err);
           res.send(err);
-        }
-        else {
+        } else {
           res.end();
         }
       })
@@ -101,15 +90,13 @@ router.post("/cancelrequest", (req, res) => {
     if (err) {
       console.log(err);
       res.send(err);
-    }
-    else {
+    } else {
       friendid = result["rows"][0]["id"];
       client.query(`DELETE FROM user_friends WHERE user_id=${userid} AND friend_id=${friendid}; DELETE FROM user_friends WHERE user_id=${friendid} AND friend_id=${userid}`, (err, result) => {
         if (err) {
           console.log(err);
           res.send(err)
-        }
-        else {
+        } else {
           res.end();
         }
       })
@@ -128,8 +115,7 @@ router.post("/acceptrequest", (req, res) => {
     if (err) {
       console.log(err, "error in the accept request trying to find the id of the friend with friend email");
       res.send(err)
-    }
-    else {
+    } else {
       friendid = result.rows[0]["id"];
       client.query(`UPDATE user_friends SET status='Friends' WHERE user_id=${userid} AND friend_id=${friendid}; UPDATE user_friends SET status='Friends' WHERE user_id=${friendid} AND friend_id=${userid};`);
 
@@ -137,16 +123,13 @@ router.post("/acceptrequest", (req, res) => {
         if (err) {
           console.log(err);
           res.end();
-        }
-
-        else {
+        } else {
           chatroomid = result["rows"][0]["id"];
           client.query(`INSERT INTO user_chatroom(userid, friendid, chatroomid) VALUES(${userid}, ${friendid}, ${chatroomid}); INSERT INTO user_chatroom(friendid, userid, chatroomid) VALUES(${userid}, ${friendid},${chatroomid})`, (err, result) => {
             if (err) {
               console.log(err);
               res.end();
-            }
-            else {
+            } else {
               res.end();
             }
           })
@@ -168,28 +151,28 @@ router.get("/:id/allOtherUsers", (req, res) => {
     if (error) {
       console.log(error);
       res.end()
-    }
-    else {
+    } else {
       recommendedUsers = result.rows;
       client.query(`SELECT * FROM user_friends INNER JOIN users ON user_friends.friend_id = users.id WHERE user_id = ${ownId} and status = 'Request received'`, (err, result) => {
         if (err) {
           console.log(error);
           res.end()
-        }
-        else {
+        } else {
           pendingUsers = result.rows;
           client.query(`SELECT friend_id FROM user_friends WHERE user_id = ${ownId}`, (err, result) => {
             if (err) {
               console.log(err);
               res.end()
-            }
-            else {
+            } else {
               for (let friend in result.rows) {
                 userFriends.add(result.rows[friend]["friend_id"])
               };
               recommendedUsers = recommendedUsers.filter(user => !userFriends.has(user.id));
               recommendedUsers.sort(() => Math.random() - 0.5);
-              res.json({ recommendedUsers, pendingUsers });
+              res.json({
+                recommendedUsers,
+                pendingUsers
+              });
             }
           })
         }
@@ -205,9 +188,10 @@ router.get("/:id/allfriends", (req, res) => {
     if (err) {
       console.log(err);
       res.end();
-    }
-    else {
-      res.json({ friends: result.rows })
+    } else {
+      res.json({
+        friends: result.rows
+      })
     }
   })
 })

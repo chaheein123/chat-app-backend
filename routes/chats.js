@@ -1,23 +1,8 @@
-const express = require("express");
-const router = express.Router();
 const {
-  io
+  io,
+  router,
+  client
 } = require("../index");
-// const socketio = require("socket.io");
-// const http = require("http");
-// const server = http.createServer(router);
-// const io = socketio(server);
-
-// Postgresql DB
-const pg = require("pg");
-const {
-  Client
-} = require("pg");
-const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
-const client = new Client({
-  connectionString: connectionString
-});
-client.connect();
 
 const userIdToSocketIdMap = {};
 
