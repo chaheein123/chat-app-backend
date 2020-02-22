@@ -4,16 +4,19 @@ const {
   client
 } = require("../index");
 
-const userIdToSocketIdMap = {};
+const verifyToken = require("../services/verification");
 
-io.on("connection", (socket) => {
-  console.log("SOCKET ID : ", socket.id)
-  userIdToSocketIdMap[148] = socket.id;
-});
+io.on("connect", (socket) => {
+  socket.emit("chatroomIdRequest");
+  socket.on("sendingChatroomId", data => {
+    socket.join(Number(data));
+  })
+})
 
 // Chats
-router.get("/allchats/:id", (req, res) => {
-  let userid = Number(req.params.id);
+router.get("/allchats", (req, res) => {
+  let ownId = Number(req.query.ownId);
+  verifyToken(ownId, req.query.usertoken);
 
   client.query(
     `SELECT DISTINCT ON (user_chatroom.chatroomid) user_chatroom.chatroomid,
@@ -22,32 +25,34 @@ router.get("/allchats/:id", (req, res) => {
     FROM user_chatroom
     LEFT JOIN messages ON user_chatroom.chatroomid = messages.chatroomid
     INNER JOIN users ON user_chatroom.friendid = users.id
-    WHERE user_chatroom.userid = ${userid}
+    WHERE user_chatroom.userid = ${ownId}
     ORDER BY user_chatroom.chatroomid, messages.id DESC
     `, (err, result) => {
-      if (err) {
-
-        res.end()
-      } else {
-        res.send(result.rows);
-      }
+    if (err) {
+      console.log(error);
+      res.end()
+    } else {
+      res.send(result.rows);
     }
+  }
   )
 });
 
 router.get("/:id/chatroom/:chatroomid", (req, res) => {
+
   let ownid = Number(req.params.id);
   let chatroomid = Number(req.params.chatroomid);
   let chatters;
   let messages;
 
-  client.query(`SELECT users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE chatroomid = ${chatroomid} AND friendid != ${ownid}`, (err, result) => {
-    if (err) {
+  verifyToken(ownid, req.query.usertoken);
 
+  client.query('SELECT users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE chatroomid = $1 AND friendid != $2', [chatroomid, ownid], (err, result) => {
+    if (err) {
       res.end()
     } else {
       chatters = result.rows;
-      client.query(`SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=${chatroomid} ORDER BY messages.createdat`, (err, result) => {
+      client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=$1 ORDER BY messages.createdat', [chatroomid], (err, result) => {
         if (err) {
 
           res.end()
@@ -61,7 +66,6 @@ router.get("/:id/chatroom/:chatroomid", (req, res) => {
       })
     }
   });
-
 });
 
 router.post("/sentmsg", (req, res) => {
@@ -69,22 +73,27 @@ router.post("/sentmsg", (req, res) => {
   let chatroomId = Number(req.body.chatroomId);
   let msg = req.body.msg;
 
-  client.query(`INSERT INTO messages(sentby, chatroomid, msgcontent) VALUES (${ownId}, ${chatroomId}, '${msg}') RETURNING *`, (err, messageResult) => {
-    if (err) console.log(err);
-    client.query(`SELECT userid FROM user_chatroom WHERE chatroomid = ${chatroomId}`, (err, result) => {
-      if (err) console.log(err);
+  verifyToken(ownId, req.body.usertoken);
 
-      const userIds = result.rows.map(({
-        userid
-      }) => userid);
-
-      userIds.map((userId) => {
-        console.log(userIdToSocketIdMap[userId])
-        io.to(userIdToSocketIdMap[userId]).emit("newMessage", messageResult.rows);
-      });
-
+  client.query('INSERT INTO messages(sentby, chatroomid, msgcontent) VALUES ($1, $2, $3) RETURNING *', [ownId, chatroomId, msg], (err, result) => {
+    if (err) {
+      console.log(err);
       res.end();
-    });
+    }
+
+    else {
+
+      client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE messages.id=$1', [result.rows[0].id], (err, result) => {
+        if (err) {
+          console.log(err);
+          res.end()
+        }
+        else {
+          io.to(chatroomId).emit("sendMsg", result.rows[0]);
+          res.end();
+        }
+      })
+    }
   })
 });
 
