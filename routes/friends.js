@@ -68,7 +68,7 @@ router.post("/addfriends", (req, res) => {
       res.send(err);
     } else {
       friendid = result["rows"][0]["id"];
-      client.query(`INSERT INTO user_friends(user_id, friend_id, status) VALUES(${ownId}, ${friendid},'Request sent'); INSERT INTO user_friends(user_id, friend_id, status) VALUES(${friendid}, ${ownId},'Request received')`, (err, result) => {
+      client.query(`INSERT INTO user_friends(user_id, friend_id, status) VALUES(${ownId}, ${friendid},'Request sent'); INSERT INTO user_friends(user_id, friend_id, status) VALUES(${friendid}, ${ownId},'Request received') RETURNING *`, (err, result) => {
         if (err) {
           console.log(err);
           res.send(err);
@@ -140,7 +140,6 @@ router.put("/acceptrequest", (req, res) => {
   })
 });
 
-// stopped here
 // Handles request to find recommended users to add as friends upon FriendLeft component mounting
 router.get("/:id/allOtherUsers", (req, res) => {
   let ownId = req.params.id;
@@ -191,6 +190,22 @@ router.get("/:id/allfriends", (req, res) => {
       console.log(err);
       res.end();
     } else {
+      res.json({
+        friends: result.rows
+      })
+    }
+  })
+});
+
+router.get("/allFriends", (req, res) => {
+  let ownId = Number(req.query.ownId);
+  verifyToken(ownId, req.query.userToken);
+  client.query(`SELECT DISTINCT user_chatroom.chatroomid, users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE user_chatroom.userid = ${ownId}`, (err, result) => {
+    if (err) {
+      console.log(err);
+      res.end()
+    }
+    else {
       res.json({
         friends: result.rows
       })
