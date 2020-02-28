@@ -19,7 +19,7 @@ router.get("/allchats", (req, res) => {
   verifyToken(ownId, req.query.usertoken);
 
   client.query(
-    `SELECT DISTINCT ON (user_chatroom.chatroomid) user_chatroom.chatroomid,
+    `SELECT DISTINCT ON (user_chatroom.chatroomid) user_chatroom.chatroomid, 
     user_chatroom.friendid, user_chatroom.userid, users.useremail,
     users.username, messages.id, messages.msgcontent, messages.createdat
     FROM user_chatroom
@@ -32,6 +32,7 @@ router.get("/allchats", (req, res) => {
       console.log(error);
       res.end()
     } else {
+      result.rows.sort((a, b) => b.id - a.id)
       res.send(result.rows);
     }
   }
