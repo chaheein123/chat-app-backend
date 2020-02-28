@@ -11,7 +11,7 @@ io.on("connect", (socket) => {
   socket.on("sendingChatroomId", data => {
     socket.join(Number(data));
   })
-})
+});
 
 // Chats
 router.get("/allchats", (req, res) => {
@@ -90,11 +90,44 @@ router.post("/sentmsg", (req, res) => {
         }
         else {
           io.to(chatroomId).emit("sendMsg", result.rows[0]);
+          io.to(chatroomId).emit("receivedMsg", ownId);
           res.end();
         }
       })
     }
   })
 });
+
+router.get("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
+
+  let chatroomId = req.params.msgId;
+  let ownId = req.params.ownId;
+
+  client.query(`SELECT * FROM messages INNER JOIN chatrooms ON messages.chatroomid = chatrooms.id WHERE chatroomid = ${chatroomId} AND NOT sentby = ${ownId}`, (err, result) => {
+
+    if (err) {
+      console.log(err);
+      res.end()
+    } else {
+      let total = 0;
+      // console.log(result.rows);
+      for (let i = 0; i < result.rows.length; i++) {
+        total += result.rows[i]["msgread"]
+      };
+      res.json({ total });
+    }
+  });
+});
+
+router.put("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
+  let chatroomId = req.params.msgId;
+  let ownId = req.params.ownId;
+  console.log(chatroomId, ownId);
+  client.query(`UPDATE messages SET msgread = 0 WHERE chatroomid = ${chatroomId} AND NOT sentby=${ownId}`, (err, result) => {
+    res.end();
+  })
+
+})
+
 
 module.exports = router;
