@@ -38,33 +38,40 @@ router.get("/allchats", (req, res) => {
   )
 });
 
-router.get("/:id/chatroom/:chatroomid", (req, res) => {
+router.get("/:id/chatroom/:chatroomid", async (req, res) => {
 
   let ownid = Number(req.params.id);
   let chatroomid = Number(req.params.chatroomid);
   let chatters;
   let messages;
 
-  verifyToken(ownid, req.query.usertoken);
-
-  client.query('SELECT users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE chatroomid = $1 AND friendid != $2', [chatroomid, ownid], (err, result) => {
+  await verifyToken(ownid, req.query.usertoken);
+  client.query(`UPDATE messages SET msgread = 0 WHERE chatroomid = ${chatroomid} AND NOT sentby=${ownid}`, (err, result) => {
     if (err) {
-      res.end()
+      console.log(err);
+      res.end();
     } else {
-      chatters = result.rows;
-      client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=$1 ORDER BY messages.createdat', [chatroomid], (err, result) => {
+      client.query('SELECT users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE chatroomid = $1 AND friendid != $2', [chatroomid, ownid], (err, result) => {
         if (err) {
-
           res.end()
         } else {
-          messages = result.rows;
-          res.json({
-            chatters,
-            messages
-          });
+          chatters = result.rows;
+          client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=$1 ORDER BY messages.createdat', [chatroomid], (err, result) => {
+            if (err) {
+              res.end()
+            } else {
+              messages = result.rows;
+              res.json({
+                chatters,
+                messages
+              });
+            }
+          })
         }
-      })
+      });
     }
+
+
   });
 });
 
@@ -110,7 +117,6 @@ router.get("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
       res.end()
     } else {
       let total = 0;
-      // console.log(result.rows);
       for (let i = 0; i < result.rows.length; i++) {
         total += result.rows[i]["msgread"]
       };
@@ -122,12 +128,9 @@ router.get("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
 router.put("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
   let chatroomId = req.params.msgId;
   let ownId = req.params.ownId;
-  console.log(chatroomId, ownId);
   client.query(`UPDATE messages SET msgread = 0 WHERE chatroomid = ${chatroomId} AND NOT sentby=${ownId}`, (err, result) => {
     res.end();
   })
-
 })
-
 
 module.exports = router;
