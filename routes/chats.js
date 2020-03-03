@@ -10,7 +10,7 @@ io.on("connect", (socket) => {
   socket.emit("chatroomIdRequest");
   socket.on("sendingChatroomId", data => {
     socket.join(Number(data));
-  })
+  });
 });
 
 // Chats
@@ -71,8 +71,6 @@ router.get("/:id/chatroom/:chatroomid", async (req, res) => {
         }
       });
     }
-
-
   });
 });
 

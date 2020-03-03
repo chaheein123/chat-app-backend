@@ -1,9 +1,17 @@
 const {
   router,
   client,
+  io
 } = require("../index");
 
 const verifyToken = require("../services/verification");
+
+io.of("/friendsIo").on("connect", socket => {
+  socket.emit("requestIdFromServer");
+  socket.on("idToServer", data => {
+    socket.join(Number(data));
+  })
+})
 
 // Find users from friends feature
 router.post("/findusers", (req, res) => {
@@ -107,6 +115,7 @@ router.delete("/cancelrequest", (req, res) => {
 });
 
 router.put("/acceptrequest", (req, res) => {
+
   let friendid;
   let chatroomid;
 
@@ -126,11 +135,17 @@ router.put("/acceptrequest", (req, res) => {
           res.end();
         } else {
           chatroomid = result["rows"][0]["id"];
-          client.query(`INSERT INTO user_chatroom(userid, friendid, chatroomid) VALUES(${ownId}, ${friendid}, ${chatroomid}); INSERT INTO user_chatroom(friendid, userid, chatroomid) VALUES(${ownId}, ${friendid},${chatroomid})`, (err, result) => {
+          // io.of("/friendsIo").join(chatroomid);
+
+          client.query(`INSERT INTO user_chatroom(userid, friendid, chatroomid) VALUES(${ownId}, ${friendid}, ${chatroomid}); INSERT INTO user_chatroom(friendid, userid, chatroomid) VALUES(${ownId}, ${friendid},${chatroomid}); SELECT username from users WHERE useremail = '${req.body.friendemail}'`, (err, result) => {
             if (err) {
               console.log(err);
               res.end();
             } else {
+              let friendRightData = { username: result[2].rows[0].username, useremail: req.body.friendemail, chatroomid };
+              // console.log(friendRightData);
+              // io.of("/friendsIo").to(chatroomid).emit("fromServer", friendRightData)
+              io.of("/friendsIo").to(Number(req.body.userid)).emit("acceptedRequest", friendRightData);
               res.end();
             }
           })
