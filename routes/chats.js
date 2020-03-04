@@ -21,7 +21,7 @@ router.get("/allchats", (req, res) => {
   client.query(
     `SELECT DISTINCT ON (user_chatroom.chatroomid) user_chatroom.chatroomid, 
     user_chatroom.friendid, user_chatroom.userid, users.useremail,
-    users.username, messages.id, messages.msgcontent, messages.createdat
+    users.username, users.imgurl,messages.id, messages.msgcontent, messages.createdat
     FROM user_chatroom
     LEFT JOIN messages ON user_chatroom.chatroomid = messages.chatroomid
     INNER JOIN users ON user_chatroom.friendid = users.id

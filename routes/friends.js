@@ -143,8 +143,6 @@ router.put("/acceptrequest", (req, res) => {
               res.end();
             } else {
               let friendRightData = { username: result[2].rows[0].username, useremail: req.body.friendemail, chatroomid };
-              // console.log(friendRightData);
-              // io.of("/friendsIo").to(chatroomid).emit("fromServer", friendRightData)
               io.of("/friendsIo").to(Number(req.body.userid)).emit("acceptedRequest", friendRightData);
               res.end();
             }
