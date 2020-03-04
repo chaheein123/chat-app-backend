@@ -57,7 +57,7 @@ router.get("/:id/chatroom/:chatroomid", async (req, res) => {
           res.end()
         } else {
           chatters = result.rows;
-          client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=$1 ORDER BY messages.createdat', [chatroomid], (err, result) => {
+          client.query('SELECT users.useremail, users.username, users.imgurl, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE chatroomid=$1 ORDER BY messages.createdat', [chatroomid], (err, result) => {
             if (err) {
               res.end()
             } else {
@@ -89,7 +89,7 @@ router.post("/sentmsg", (req, res) => {
 
     else {
 
-      client.query('SELECT users.useremail, users.username, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE messages.id=$1', [result.rows[0].id], (err, result) => {
+      client.query('SELECT users.useremail, users.username, users.imgurl, messages.id, messages.msgcontent, messages.createdat, messages.sentby FROM messages INNER JOIN users ON messages.sentby = users.id WHERE messages.id=$1', [result.rows[0].id], (err, result) => {
         if (err) {
           console.log(err);
           res.end()

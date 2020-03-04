@@ -22,7 +22,7 @@ router.post("/findusers", (req, res) => {
 
   let ownId = verifyToken(req.body.userid, req.body.usertoken);
 
-  client.query('SELECT useremail, username FROM users WHERE NOT id = $1', [ownId], (err, result) => {
+  client.query('SELECT useremail, username, imgurl FROM users WHERE NOT id = $1', [ownId], (err, result) => {
 
     if (err) {
       console.log(err);
@@ -135,14 +135,13 @@ router.put("/acceptrequest", (req, res) => {
           res.end();
         } else {
           chatroomid = result["rows"][0]["id"];
-          // io.of("/friendsIo").join(chatroomid);
 
-          client.query(`INSERT INTO user_chatroom(userid, friendid, chatroomid) VALUES(${ownId}, ${friendid}, ${chatroomid}); INSERT INTO user_chatroom(friendid, userid, chatroomid) VALUES(${ownId}, ${friendid},${chatroomid}); SELECT username from users WHERE useremail = '${req.body.friendemail}'`, (err, result) => {
+          client.query(`INSERT INTO user_chatroom(userid, friendid, chatroomid) VALUES(${ownId}, ${friendid}, ${chatroomid}); INSERT INTO user_chatroom(friendid, userid, chatroomid) VALUES(${ownId}, ${friendid},${chatroomid}); SELECT username, imgurl from users WHERE useremail = '${req.body.friendemail}'`, (err, result) => {
             if (err) {
               console.log(err);
               res.end();
             } else {
-              let friendRightData = { username: result[2].rows[0].username, useremail: req.body.friendemail, chatroomid };
+              let friendRightData = { username: result[2].rows[0].username, useremail: req.body.friendemail, chatroomid, imgurl: result[2].rows[0].imgurl };
               io.of("/friendsIo").to(Number(req.body.userid)).emit("acceptedRequest", friendRightData);
               res.end();
             }
@@ -161,7 +160,7 @@ router.get("/:id/allOtherUsers", (req, res) => {
   let userFriends = new Set();
   let pendingUsersSet = new Set();
 
-  client.query(`SELECT DISTINCT useremail, username, id FROM users WHERE NOT id = ${ownId}`, (error, result) => {
+  client.query(`SELECT DISTINCT useremail, username, id, imgurl FROM users WHERE NOT id = ${ownId}`, (error, result) => {
     if (error) {
       console.log(error);
       res.end()
@@ -213,7 +212,7 @@ router.get("/:id/allfriends", (req, res) => {
 router.get("/allFriends", (req, res) => {
   let ownId = Number(req.query.ownId);
   verifyToken(ownId, req.query.userToken);
-  client.query(`SELECT DISTINCT user_chatroom.chatroomid, users.useremail, users.username FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE user_chatroom.userid = ${ownId}`, (err, result) => {
+  client.query(`SELECT DISTINCT user_chatroom.chatroomid, users.useremail, users.username, users.imgurl FROM user_chatroom INNER JOIN users ON user_chatroom.friendid = users.id WHERE user_chatroom.userid = ${ownId}`, (err, result) => {
     if (err) {
       console.log(err);
       res.end()
