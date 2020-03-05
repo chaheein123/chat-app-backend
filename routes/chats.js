@@ -130,6 +130,18 @@ router.put("/chatroomId/:msgId/ownId/:ownId", (req, res) => {
   client.query(`UPDATE messages SET msgread = 0 WHERE chatroomid = ${chatroomId} AND NOT sentby=${ownId}`, (err, result) => {
     res.end();
   })
+});
+
+router.get("/:ownId/:userId", (req, res) => {
+  let ownId = req.params.ownId;
+  let userId = req.params.userId;
+  console.log(ownId, userId)
+  client.query(`SELECT chatroomid FROM user_chatroom WHERE userid = ${ownId} AND friendid = ${userId}`, (err, result) => {
+    if (err) {
+      res.end()
+    }
+    res.json(result.rows[0].chatroomid)
+  })
 })
 
 module.exports = router;

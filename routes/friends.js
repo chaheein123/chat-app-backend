@@ -22,7 +22,7 @@ router.post("/findusers", (req, res) => {
 
   let ownId = verifyToken(req.body.userid, req.body.usertoken);
 
-  client.query('SELECT useremail, username, imgurl FROM users WHERE NOT id = $1', [ownId], (err, result) => {
+  client.query('SELECT useremail, username, imgurl,id FROM users WHERE NOT id = $1', [ownId], (err, result) => {
 
     if (err) {
       console.log(err);
