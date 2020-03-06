@@ -4,11 +4,11 @@ const {
 
 const verifyToken = (ownId, token) => {
   jwt.verify(token, "shhh", (err, decoded) => {
-    if (err || (decoded.id != ownId)) {
-      console.log(ownId, decoded.id, "hahahaha");
+    if (err || !decoded || (decoded.id != ownId)) {
       throw "Authentication failed";
     }
   });
+
   return ownId;
 };
 
