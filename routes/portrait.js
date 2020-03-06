@@ -16,7 +16,11 @@ router.post("/saveImg", (req, res) => {
 
 router.get("/getImg", (req, res) => {
   client.query(`SELECT imgurl FROM users WHERE users.id = ${req.query.ownId}`, (err, result) => {
-    res.send(result.rows[0].imgurl)
+    if (result && result.rows && result.rows.length) {
+      res.send(result.rows[0].imgurl)
+    } else {
+      res.send(null);
+    }
   })
 })
 
