@@ -14,7 +14,7 @@ const {
   Client
 } = require("pg");
 
-const connectionString = "postgres://postgres:root@localhost:5432/chat-app";
+const connectionString = process.env.DB_CONNECTION_STRING || "postgres://postgres:root@localhost:5432/chat-app";
 
 const client = new Client({
   connectionString: connectionString
