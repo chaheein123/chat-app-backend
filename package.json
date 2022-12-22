@@ -16,7 +16,7 @@
     "cors": "^2.8.5",
     "dustjs-helpers": "^1.7.4",
     "express": "^4.17.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "path": "^0.12.7",
     "pg": "^7.17.1",
     "socket.io": "^2.3.0"
